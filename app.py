@@ -32,9 +32,7 @@ def leer_archivo(nombre_archivo: str) -> str:
         return f"Error al leer '{nombre_archivo}': {e}"
 
 def ejecutar_comando_sistema(comando: str) -> str:
-    """Ejecuta un comando en la terminal local y devuelve el resultado (STDOUT o STDERR)."""
     try:
-        # Ejecución segura capturando las salidas de texto
         resultado = subprocess.run(comando, shell=True, capture_output=True, text=True, encoding="utf-8")
         if resultado.returncode == 0:
             return f"Comando ejecutado con éxito (Exit code 0).\nSalida de la terminal:\n{resultado.stdout}"
@@ -48,27 +46,40 @@ st.title("⚡ Codex Clone - Entorno de Desarrollo Autónomo")
 
 col_chat, col_preview = st.columns([1, 1])
 
-# Inicializar memoria histórica con instrucciones de comportamiento estrictas (Prompt del Sistema)
+# Inicializar memoria histórica y tracking del archivo activo
 if "historial_codex" not in st.session_state:
     st.session_state.historial_codex = [
         {
             "role": "system", 
             "content": (
                 "Eres un Agente de Ingeniería de Software avanzado estilo OpenAI Codex. "
-                "Tienes acceso completo para leer, escribir archivos y ejecutar comandos del sistema. "
+                "Tienes acceso completo para leer, escribir archivos y ejecutar comandos del sistema.\n"
                 "REGLAS ESTRICTAS:\n"
                 "1. No expliques cómo programar, edita los archivos directamente usando tus herramientas.\n"
                 "2. Cada vez que crees o modifiques un archivo, utiliza la herramienta 'ejecutar_comando_sistema' "
                 "para verificar el entorno o comprobar que no rompiste la estructura.\n"
-                "3. Si una herramienta o comando te devuelve un error, analiza detalladamente el fallo, "
-                "corrige el código en el archivo correspondiente y vuelve a probar. No te rindas hasta que todo funcione perfectamente."
+                "3. Si la API genera un error de formato (BadRequestError) o un comando falla, ajusta tu sintaxis e intenta de nuevo."
             )
         }
     ]
 
+if "archivo_activo" not in st.session_state:
+    st.session_state.archivo_activo = "index.html"
+
 with col_preview:
     st.subheader("📁 Código Fuente en Vivo")
-    archivo_a_ver = st.selectbox("Selecciona un archivo para inspeccionar:", ["index.html", "estilos.css", "app.py"])
+    
+    # El selector ahora lee y se sincroniza con el estado interno del agente
+    lista_archivos = ["index.html", "estilos.css", "app.py"]
+    if st.session_state.archivo_activo not in lista_archivos:
+        lista_archivos.append(st.session_state.archivo_activo)
+        
+    idx_defecto = lista_archivos.index(st.session_state.archivo_activo)
+    archivo_a_ver = st.selectbox("Archivo en edición actual:", lista_archivos, index=idx_defecto)
+    
+    # Guardar la selección manual del usuario por si quiere cambiar de pestaña
+    st.session_state.archivo_activo = archivo_a_ver
+
     if os.path.exists(archivo_a_ver):
         with open(archivo_a_ver, "r", encoding="utf-8") as f:
             st.code(f.read(), language="html" if "html" in archivo_a_ver else "css" if "css" in archivo_a_ver else "python")
@@ -77,7 +88,7 @@ with col_preview:
     
     st.markdown("---")
     st.subheader("🌐 Despliegue Directo")
-    msg_commit = st.text_input("¿Qué cambios hiciste?", placeholder="Ej: Rediseño completo de la UI")
+    msg_commit = st.text_input("¿Qué cambios hiciste?", placeholder="Ej: Seccion de comentarios operativa")
     if st.button("🚀 Empujar Cambios a GitHub Pages", use_container_width=True):
         if msg_commit:
             with st.spinner("Sincronizando repositorio remoto..."):
@@ -92,13 +103,12 @@ with col_preview:
 with col_chat:
     st.subheader("💬 Consola del Agente")
     
-    # Mostrar el historial de forma segura
     for msg in st.session_state.historial_codex:
         if msg["role"] != "system" and "content" in msg and msg["content"]:
             with st.chat_message(msg["role"]):
                 st.write(msg["content"])
 
-    if entrada_usuario := st.chat_input("¿Qué módulo o mejora quieres agregar a tu web?"):
+    if entrada_usuario := st.chat_input("¿Qué módulo o diseño quieres agregar ahora?"):
         st.session_state.historial_codex.append({"role": "user", "content": entrada_usuario})
         with st.chat_message("user"):
             st.write(entrada_usuario)
@@ -107,11 +117,9 @@ with col_chat:
             contenedor_logs = st.empty()
             logs = []
             
-            # Subimos el límite de pasos a 7 para permitirle escribir, probar y autocorregirse si falla
-            limite_pasos = 7
+            limite_pasos = 8
             paso_actual = 0
             
-            # Definición de la caja de herramientas con la nueva función de terminal
             herramientas = [
                 {
                     "type": "function",
@@ -144,7 +152,7 @@ with col_chat:
                     "type": "function",
                     "function": {
                         "name": "ejecutar_comando_sistema",
-                        "description": "Ejecuta comandos de consola en la terminal de la computadora (como 'dir', 'git status', etc.) para verificar el estado del proyecto.",
+                        "description": "Ejecuta comandos de consola en la terminal de la computadora para verificar el estado del proyecto.",
                         "parameters": {
                             "type": "object",
                             "properties": {"comando": {"type": "string"}},
@@ -157,22 +165,29 @@ with col_chat:
             while paso_actual < limite_pasos:
                 paso_actual += 1
                 
-                respuesta = client.chat.completions.create(
-                    model="llama-3.3-70b-versatile",
-                    messages=st.session_state.historial_codex,
-                    tools=herramientas,
-                    tool_choice="auto"
-                )
+                try:
+                    respuesta = client.chat.completions.create(
+                        model="llama-3.3-70b-versatile",
+                        messages=st.session_state.historial_codex,
+                        tools=herramientas,
+                        tool_choice="auto"
+                    )
+                except Exception as api_err:
+                    logs.append(f"⚠️ Alerta: Error de formato del modelo. Solicitando reintento...")
+                    contenedor_logs.markdown("\n".join(logs))
+                    st.session_state.historial_codex.append({
+                        "role": "user",
+                        "content": "ERROR DE CONEXIÓN: Tu llamada de función anterior falló. Por favor reintenta con un formato JSON plano y limpio."
+                    })
+                    continue
                 
                 mensaje_ia = respuesta.choices[0].message
                 
-                # Si el agente decide que ya terminó y no invoca más herramientas
                 if not mensaje_ia.tool_calls:
                     st.write(mensaje_ia.content)
                     st.session_state.historial_codex.append({"role": "assistant", "content": mensaje_ia.content})
                     break
                 
-                # Convertir la llamada en un formato de diccionario compatible para la memoria
                 dict_herramientas = []
                 for tool in mensaje_ia.tool_calls:
                     dict_herramientas.append({
@@ -190,11 +205,24 @@ with col_chat:
                     "tool_calls": dict_herramientas
                 })
                 
-                # Ejecutar herramientas dinámicamente
                 for tool in mensaje_ia.tool_calls:
                     nombre_func = tool.function.name
-                    args = json.loads(tool.function.arguments)
                     
+                    try:
+                        args = json.loads(tool.function.arguments)
+                    except Exception:
+                        st.session_state.historial_codex.append({
+                            "role": "tool",
+                            "tool_call_id": tool.id,
+                            "name": nombre_func,
+                            "content": "Error: Argumentos inválidos."
+                        })
+                        continue
+
+                    # Sincronizar dinámicamente el visor con el archivo que se está modificando o leyendo
+                    if "nombre_archivo" in args:
+                        st.session_state.archivo_activo = args["nombre_archivo"]
+
                     if nombre_func == "escribir_archivo":
                         logs.append(f"🛠️ Modificando `{args['nombre_archivo']}`...")
                         contenedor_logs.markdown("\n".join(logs))
@@ -210,7 +238,6 @@ with col_chat:
                         contenedor_logs.markdown("\n".join(logs))
                         resultado_ejecucion = ejecutar_comando_sistema(args['comando'])
                     
-                    # Inyectar el feedback del sistema directo a la mente del modelo
                     st.session_state.historial_codex.append({
                         "role": "tool",
                         "tool_call_id": tool.id,
