@@ -1,1 +1,86 @@
-<!DOCTYPE html><html><head><title>SportLife</title><style>body {background-color: #1A1D23; font-family: Inter, Arial, sans-serif;} .titulo {position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 48px; color: #FFFFFF;}</style></head><body><h1 class='titulo'>SportLife</h1></body></html>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reproductor de Música</title>
+    <style>
+        body {
+            background: linear-gradient(120deg, #ff69b4, #ffe6f2);
+            background-size: 1800px 1800px;
+            animation: fondo 10s ease infinite;
+            font-family: 'Arial', sans-serif;
+            color: #fff;
+        }
+        @keyframes fondo {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+        .reproductor {
+            width: 80%;
+            margin: 40px auto;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+        .botones {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 20px;
+        }
+        .boton {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            background: #4CAF50;
+            color: #fff;
+            transition: background 0.3s ease;
+        }
+        .boton:hover {
+            background: #3e8e41;
+        }
+        .comentarios {
+            margin-top: 40px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <div class="reproductor">
+        <h1>Reproductor de Música</h1>
+        <div class="botones">
+            <button class="boton" id="reproducir">Reproducir</button>
+            <button class="boton" id="pausar">Pausar</button>
+        </div>
+        <div class="comentarios">
+            <h2>Comentarios</h2>
+            <textarea placeholder="Escribe tu comentario aquí..."></textarea>
+            <button class="boton" id="enviar">Enviar</button>
+        </div>
+    </div>
+    <script>
+        // Agregar funcionalidad a los botones
+        document.getElementById("reproducir").addEventListener("click", function() {
+            // Código para reproducir la música
+        });
+        document.getElementById("pausar").addEventListener("click", function() {
+            // Código para pausar la música
+        });
+        document.getElementById("enviar").addEventListener("click", function() {
+            // Código para enviar el comentario
+        });
+    </script>
+</body>
+</html>

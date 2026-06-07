@@ -4,9 +4,10 @@ import json
 from groq import Groq
 from dotenv import load_dotenv
 import subprocess
+import streamlit.components.v1 as components
 
-# Configuración visual avanzada
-st.set_page_config(page_title="Codex Clone Agent", page_icon="⚡", layout="wide")
+# Configuración visual avanzada de nivel profesional
+st.set_page_config(page_title="Codex Clone Workspace", page_icon="⚡", layout="wide")
 load_dotenv()
 
 if "GROQ_API_KEY" in os.environ:
@@ -46,7 +47,7 @@ st.title("⚡ Codex Clone - Entorno de Desarrollo Autónomo")
 
 col_chat, col_preview = st.columns([1, 1])
 
-# Inicializar memoria histórica con reglas de diseño estrictas
+# Inicializar memoria histórica
 if "historial_codex" not in st.session_state:
     st.session_state.historial_codex = [
         {
@@ -55,10 +56,11 @@ if "historial_codex" not in st.session_state:
                 "Eres un Agente de Ingeniería de Software avanzado estilo OpenAI Codex. "
                 "Tienes acceso completo para leer, escribir archivos y ejecutar comandos.\n"
                 "REGLAS DE DISEÑO Y CÓDIGO:\n"
-                "1. ¡PROHIBIDO EL HTML PLANO SIN ESTILOS! Siempre que crees o edites una interfaz, agrégale un diseño CSS moderno, "
-                "espectacular y limpio (usa paletas oscuras, fuentes sans-serif como Inter/Arial, bordes redondeados y sombras suaves).\n"
-                "2. Edita los archivos directamente usando tus herramientas en lugar de solo dar explicaciones.\n"
-                "3. Si un comando o la API fallan, corrige la sintaxis e intenta de nuevo de forma autónoma."
+                "1. ¡PROHIBIDO EL HTML PLANO SIN ESTILOS! Siempre que crees o edites una interfaz, agrégale un diseño CSS moderno y premium "
+                "(paletas oscuras o gradientes elegantes, fuentes sans-serif, bordes redondeados y efectos hover reactivos).\n"
+                "2. Integra los estilos CSS directamente dentro de una etiqueta <style> en el index.html o asegúrate de que estilos.css "
+                "esté perfectamente enlazado para que la vista previa local funcione de inmediato.\n"
+                "3. Si un comando o la API fallan, corrige la sintaxis de forma autónoma e intenta de nuevo."
             )
         }
     ]
@@ -67,40 +69,57 @@ if "archivo_activo" not in st.session_state:
     st.session_state.archivo_activo = "index.html"
 
 with col_preview:
-    st.subheader("📁 Código Fuente en Vivo")
+    # Creamos dos pestañas profesionales: Una para inspeccionar el código y otra para ver el renderizado
+    tab_codigo, tab_render = st.tabs(["📁 Código Fuente", "🌐 Vista Previa en Vivo"])
     
-    lista_archivos = ["index.html", "estilos.css", "app.py"]
-    if st.session_state.archivo_activo not in lista_archivos:
-        lista_archivos.append(st.session_state.archivo_activo)
-        
-    idx_defecto = lista_archivos.index(st.session_state.archivo_activo)
-    archivo_a_ver = st.selectbox("Archivo en edición actual:", lista_archivos, index=idx_defecto)
-    st.session_state.archivo_activo = archivo_a_ver
+    with tab_codigo:
+        lista_archivos = ["index.html", "estilos.css", "app.py"]
+        if st.session_state.archivo_activo not in lista_archivos:
+            lista_archivos.append(st.session_state.archivo_activo)
+            
+        idx_defecto = lista_archivos.index(st.session_state.archivo_activo)
+        archivo_a_ver = st.selectbox("Archivo en edición:", lista_archivos, index=idx_defecto, key="selector_archivos")
+        st.session_state.archivo_activo = archivo_a_ver
 
-    if os.path.exists(archivo_a_ver):
-        with open(archivo_a_ver, "r", encoding="utf-8") as f:
-            st.code(f.read(), language="html" if "html" in archivo_a_ver else "css" if "css" in archivo_a_ver else "python")
-    else:
-        st.info(f"El archivo '{archivo_a_ver}' se mostrará aquí cuando el agente lo cree.")
+        if os.path.exists(archivo_a_ver):
+            with open(archivo_a_ver, "r", encoding="utf-8") as f:
+                st.code(f.read(), language="html" if "html" in archivo_a_ver else "css" if "css" in archivo_a_ver else "python")
+        else:
+            st.info(f"El archivo '{archivo_a_ver}' se mostrará aquí cuando el agente lo cree.")
+            
+    with tab_render:
+        st.markdown("### Renderizado en Tiempo Real (Local)")
+        if os.path.exists("index.html"):
+            with open("index.html", "r", encoding="utf-8") as f:
+                html_content = f.read()
+            
+            # Inyectar estilos.css local dentro del HTML para la vista previa integrada si existe
+            if os.path.exists("estilos.css"):
+                with open("estilos.css", "r", encoding="utf-8") as css_f:
+                    css_content = css_f.read()
+                html_content = html_content.replace("</head>", f"<style>{css_content}</style></head>")
+            
+            # Renderizar el Sandbox visual
+            components.html(html_content, height=500, scrolling=True)
+        else:
+            st.info("Crea un archivo 'index.html' para activar la vista previa.")
     
     st.markdown("---")
     st.subheader("🌐 Despliegue Directo")
-    msg_commit = st.text_input("¿Qué cambios hiciste?", placeholder="Ej: Rediseño visual premium")
+    msg_commit = st.text_input("¿Qué cambios hiciste?", placeholder="Ej: UI premium con vista previa local")
     if st.button("🚀 Empujar Cambios a GitHub Pages", use_container_width=True):
         if msg_commit:
             with st.spinner("Sincronizando repositorio remoto..."):
                 subprocess.run("git add .", shell=True)
                 subprocess.run(f'git commit -m "{msg_commit}"', shell=True)
                 res = subprocess.run("git push origin main", shell=True, capture_output=True, text=True)
-                st.success("¡Desplegado! Dale 30 segundos a GitHub para actualizar la URL.")
+                st.success("¡Desplegado con éxito mundial! Revisa tu GitHub Pages en 30 segundos.")
                 st.balloons()
         else:
             st.warning("Escribe una descripción del avance.")
 
 with col_chat:
     st.subheader("💬 Consola del Agente")
-    
-    # 🌟 MEJORA: Altura fija y scroll automático para los mensajes
     container_mensajes = st.container(height=500)
     
     with container_mensajes:
@@ -109,11 +128,9 @@ with col_chat:
                 with st.chat_message(msg["role"]):
                     st.write(msg["content"])
 
-    # El chat input ahora se queda fijo abajo del contenedor gracias a la propiedad height
-    if entrada_usuario := st.chat_input("Instrucción (ej: 'Rediseña la web con un estilo premium oscuro')"):
+    if entrada_usuario := st.chat_input("¿Qué funcionalidad o módulo agregamos al Sandbox?"):
         st.session_state.historial_codex.append({"role": "user", "content": entrada_usuario})
         
-        # Forzar repintado inmediato del mensaje del usuario
         with container_mensajes:
             with st.chat_message("user"):
                 st.write(entrada_usuario)
