@@ -1,27 +1,11 @@
-<!DOCTYPE html>
-<html lang="es">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reproductor de Música</title>
     <style>
         body {
-            background: linear-gradient(120deg, #ff69b4, #ffe6f2);
-            background-size: 1800px 1800px;
-            animation: fondo 10s ease infinite;
-            font-family: 'Arial', sans-serif;
+            background-color: #212121;
+            font-family: Arial, sans-serif;
             color: #fff;
-        }
-        @keyframes fondo {
-            0% {
-                background-position: 0% 50%;
-            }
-            50% {
-                background-position: 100% 50%;
-            }
-            100% {
-                background-position: 0% 50%;
-            }
         }
         .reproductor {
             width: 80%;
@@ -70,17 +54,5 @@
             <button class="boton" id="enviar">Enviar</button>
         </div>
     </div>
-    <script>
-        // Agregar funcionalidad a los botones
-        document.getElementById("reproducir").addEventListener("click", function() {
-            // Código para reproducir la música
-        });
-        document.getElementById("pausar").addEventListener("click", function() {
-            // Código para pausar la música
-        });
-        document.getElementById("enviar").addEventListener("click", function() {
-            // Código para enviar el comentario
-        });
-    </script>
 </body>
 </html>
